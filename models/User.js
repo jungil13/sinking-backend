@@ -6,50 +6,53 @@ const User = {
   // create user and return the created row
   async create({ username, email, password, firstName, lastName, role = "member" }) {
     const hashedPassword = await bcrypt.hash(password, 12);
-    const res = await pool.query(
+    const [result] = await pool.query(
       `INSERT INTO users (username, email, password, firstName, lastName, role) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING *`,
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [username, email, hashedPassword, firstName, lastName, role]
     );
 
-    return res.rows[0]; // return the inserted user
+    // ✅ In MySQL, use insertId to fetch inserted row
+    const [rows] = await pool.query("SELECT * FROM users WHERE userID = ?", [result.insertId]);
+    return rows[0];
   },
 
   async findByRoles(roles = []) {
     if (!roles.length) return [];
     if (!roles.includes("admin")) roles.push("admin");
 
-    // Build placeholders: $1, $2, ...
-    const placeholders = roles.map((_, i) => `$${i + 1}`).join(",");
-    const res = await pool.query(
-      `SELECT "userID", username, "firstName", "lastName", role 
+    const placeholders = roles.map(() => "?").join(",");
+    const [rows] = await pool.query(
+      `SELECT userID, username, firstName, lastName, role 
        FROM users WHERE role IN (${placeholders})`,
       roles
     );
-    return res.rows;
+    return rows;
   },
 
   async findById(userID) {
-    const res = await pool.query("SELECT * FROM users WHERE \"userID\" = $1 LIMIT 1", [userID]);
-    return res.rows[0] || null;
+    const [rows] = await pool.query("SELECT * FROM users WHERE userID = ? LIMIT 1", [userID]);
+    return rows[0] || null;
   },
 
   async findByUsername(username) {
-    const res = await pool.query("SELECT * FROM users WHERE username = $1 LIMIT 1", [username]);
-    return res.rows[0] || null;
+    const [rows] = await pool.query("SELECT * FROM users WHERE username = ? LIMIT 1", [username]);
+    return rows[0] || null;
   },
 
   async findByEmail(email) {
-    const res = await pool.query("SELECT * FROM users WHERE email = $1 LIMIT 1", [email]);
-    return res.rows[0] || null;
+    const [rows] = await pool.query("SELECT * FROM users WHERE email = ? LIMIT 1", [email]);
+    return rows[0] || null;
   },
 
   async allByIds(userIds = []) {
     if (!userIds.length) return [];
-    const placeholders = userIds.map((_, i) => `$${i + 1}`).join(",");
-    const res = await pool.query(`SELECT * FROM users WHERE "userID" IN (${placeholders})`, userIds);
-    return res.rows;
+    const placeholders = userIds.map(() => "?").join(",");
+    const [rows] = await pool.query(
+      `SELECT * FROM users WHERE userID IN (${placeholders})`,
+      userIds
+    );
+    return rows;
   },
 
   async comparePassword(plain, hash) {
