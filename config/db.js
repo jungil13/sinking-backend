@@ -1,29 +1,28 @@
-import pkg from 'pg';
-const { Pool } = pkg;
+// db.js
+import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const pool = new Pool({
+const pool = mysql.createPool({
   host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "postgres", // not "root" in Postgres
+  user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "fundease",
-  port: process.env.DB_PORT || 5432,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  database: process.env.DB_NAME || "fundeases_db",
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 // Test connection
 (async () => {
   try {
-    const client = await pool.connect();
-    console.log("✅ Connected to PostgreSQL database");
-    client.release();
+    const connection = await pool.getConnection();
+    console.log("✅ Connected to MySQL database");
+    connection.release();
   } catch (err) {
-    console.error("❌ PostgreSQL connection error:", err);
+    console.error("❌ MySQL connection error:", err.message);
   }
 })();
 
