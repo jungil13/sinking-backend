@@ -49,46 +49,43 @@ const register = async (req, res) => {
   }
 };
 
-// ✅ Login Controller
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    let [userRows] = await pool.query("SELECT * FROM users WHERE username = ?", [username]);
+    // 🔹 Look up user in users table
+    const userRes = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     let user = null;
     let isAdmin = false;
     let memberID = null;
 
-    if (userRows.length > 0) {
-      user = userRows[0];
-
-      // Check if user has admin role
+    if (userRes.rows.length > 0) {
+      user = userRes.rows[0];
       isAdmin = user.role === "admin";
 
-          // If member, get memberID from members table and check if active
       if (!isAdmin) {
-        const [memberRows] = await pool.query("SELECT * FROM members WHERE userID = ?", [user.userID]);
-        if (memberRows.length > 0) {
-        const member = memberRows[0];
-        memberID = member.memberID;
-        
-        // Check if member is active and user is active
-        if (member.status !== 'active' || !user.isActive) {
-          return res.status(401).json({ 
-            message: "Your account is not active. Please contact admin for assistance." 
+        // 🔹 Check members table
+        const memberRes = await pool.query("SELECT * FROM members WHERE \"userID\" = $1", [user.userID]);
+        if (memberRes.rows.length > 0) {
+          const member = memberRes.rows[0];
+          memberID = member.memberID;
+
+          if (member.status !== 'active' || !user.isActive) {
+            return res.status(401).json({
+              message: "Your account is not active. Please contact admin for assistance."
+            });
+          }
+        } else {
+          return res.status(401).json({
+            message: "Member profile not found. Please contact admin for assistance."
           });
-        }
-      } else {
-        return res.status(401).json({ 
-          message: "Member profile not found. Please contact admin for assistance." 
-        });
         }
       }
     } else {
-      // 🔍 If not found in users, check admins table
-      const [adminRows] = await pool.query("SELECT * FROM admins WHERE username = ?", [username]);
-      if (adminRows.length > 0) {
-        user = adminRows[0];
+      // 🔹 If not in users, check admins table
+      const adminRes = await pool.query("SELECT * FROM admins WHERE username = $1", [username]);
+      if (adminRes.rows.length > 0) {
+        user = adminRes.rows[0];
         isAdmin = true;
       }
     }
@@ -103,7 +100,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password." });
     }
 
-    // 🎟️ JWT token (⚡ use user.userID or user.adminID correctly)
+    // 🎟️ JWT token
     const token = jwt.sign(
       {
         id: isAdmin ? (user.adminID || user.userID) : user.userID,
@@ -111,7 +108,7 @@ const login = async (req, res) => {
         role: isAdmin ? "admin" : user.role,
         username: user.username,
         isAdmin,
-        email: user.email,   
+        email: user.email,
         fromAdminsTable: isAdmin && user.adminID ? true : false,
       },
       process.env.JWT_SECRET || "supersecretkey",
@@ -129,7 +126,7 @@ const login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         isAdmin,
-        email: user.email,      
+        email: user.email,
         fromAdminsTable: isAdmin && user.adminID ? true : false,
       },
     });
