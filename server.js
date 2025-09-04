@@ -95,18 +95,18 @@ io.on("connection", (socket) => {
 
 // DB + Server Start
 const startServer = async () => {
-  try {
-    const connection = await pool.getConnection();
-    console.log("✅ Connected to MySQL Database");
-    connection.release();
+  try {
+    const client = await pool.connect(); // ✅ PostgreSQL way
+    console.log("✅ Connected to PostgreSQL Database");
+    client.release(); // release client back to pool
 
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running with Socket.IO on http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error("❌ Failed to connect to Database:", err.message);
-    process.exit(1);
-  }
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running with Socket.IO on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to connect to Database:", err.message);
+    process.exit(1);
+  }
 };
 
 startServer();
