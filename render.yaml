@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: sinking-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: JWT_SECRET
+        sync: false
+      - key: MAILTRAP_HOST
+        value: smtp.gmail.com
+      - key: MAILTRAP_PORT
+        value: 587
+      - key: MAILTRAP_USER
+        sync: false
+      - key: MAILTRAP_PASS
+        sync: false
+      - key: MAILTRAP_FROM_EMAIL
+        sync: false
+      - key: MAILTRAP_FROM_NAME
+        value: FundEase System
+      - key: FRONTEND_URL
+        sync: false
+      - key: PAYMONGO_SECRET_KEY
+        sync: false
+      - key: WEBHOOK_SECRET_KEY
+        sync: false
