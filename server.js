@@ -34,8 +34,13 @@ const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middlewares
-app.use(cors());
+app.use(cors({
+  origin: "https://fundease-xi.vercel.app", // your Vercel frontend domain
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // only if you’re sending cookies or auth headers
+}));
+
 app.use((req, res, next) => {
   if (req.originalUrl === "/api/payments/webhook") {
     next(); 
