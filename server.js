@@ -98,12 +98,11 @@ io.on("connection", (socket) => {
   });
 });
 
-// DB + Server Start
 const startServer = async () => {
   try {
-    const client = await pool.connect(); // ✅ PostgreSQL way
-    console.log("✅ Connected to PostgreSQL Database");
-    client.release(); // release client back to pool
+    const connection = await pool.getConnection(); // ✅ MySQL way
+    console.log("✅ Connected to MySQL Database");
+    connection.release(); // release connection back to pool
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running with Socket.IO on http://localhost:${PORT}`);
@@ -113,5 +112,6 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
 
 startServer();
