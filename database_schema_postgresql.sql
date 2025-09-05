@@ -178,3 +178,5 @@ CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FO
 -- Insert default admin user (password: admin123)
 INSERT INTO admins (username, email, password, firstName, lastName, role) 
 VALUES ('admin', 'admin@fundease.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8Kz8Kz2', 'System', 'Administrator', 'admin');
+
+-- Note: Database name is 'fundease' (not 'fundeases_db')

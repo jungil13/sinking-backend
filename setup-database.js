@@ -8,15 +8,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "fundease",
-  port: process.env.DB_PORT || 5432,
+  connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || ''}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'fundease'}`,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 });
 
 async function setupDatabase() {
@@ -66,3 +62,4 @@ async function setupDatabase() {
 
 // Run the setup
 setupDatabase();
+

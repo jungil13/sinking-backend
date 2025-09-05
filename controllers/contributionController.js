@@ -7,10 +7,11 @@ const getUserContributions = async (req, res) => {
     const userID = req.user.id;
     
     // First get the member ID for this user
-    const [memberRows] = await pool.query(
-      "SELECT memberID FROM members WHERE userID = ?",
+    const memberRowsResult = await pool.query(
+      "SELECT memberID FROM members WHERE userID = $1",
       [userID]
     );
+    const memberRows = memberRowsResult.rows;
 
     if (memberRows.length === 0) {
       return res.status(404).json({ message: "Member not found" });
@@ -69,10 +70,11 @@ const createContribution = async (req, res) => {
     }
 
     // Get memberID
-    const [memberRows] = await pool.query(
-      "SELECT memberID FROM members WHERE userID = ?",
+    const memberRowsResult = await pool.query(
+      "SELECT memberID FROM members WHERE userID = $1",
       [userID]
     );
+    const memberRows = memberRowsResult.rows;
     if (memberRows.length === 0) {
       return res.status(404).json({ success: false, message: "Member not found" });
     }

@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 const Contribution = {
   // Get all contributions for a specific member
   async getByMemberId(memberID) {
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT 
          c.contributionID,
          c.memberID,
@@ -25,16 +25,16 @@ const Contribution = {
          u.username
        FROM contributions c 
        JOIN users u ON c.userID = u.userID 
-       WHERE c.memberID = ? 
+       WHERE c.memberID = $1 
        ORDER BY c.contributionDate DESC`,
       [memberID]
     );
-    return rows;
+    return result.rows;
   },
 
   // Get all contributions for a specific user
   async getByUserId(userID) {
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT 
          c.contributionID,
          c.memberID,
@@ -54,37 +54,37 @@ const Contribution = {
          m.memberID
        FROM contributions c 
        JOIN members m ON c.memberID = m.memberID 
-       WHERE c.userID = ? 
+       WHERE c.userID = $1 
        ORDER BY c.contributionDate DESC`,
       [userID]
     );
-    return rows;
+    return result.rows;
   },
 
   async create({ memberID, userID, amount, paymentMethod, paymentProof, contributionDate, notes, referenceNo }) {
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO contributions 
         (memberID, userID, amount, paymentMethod, paymentProof, contributionDate, notes, status, createdAt, updatedAt, status_detail, paymongo_source_id, paymongo_payment_id, referenceNo) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW(), NULL, NULL, NULL, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW(), NOW(), NULL, NULL, NULL, $8) RETURNING contributionID`,
       [memberID, userID, amount, paymentMethod, paymentProof, contributionDate, notes, referenceNo]
     );
-    return result.insertId;
+    return result.rows[0].contributionid;
   },
 
   // Update contribution status
   async updateStatus(contributionID, status, notes = null) {
-    const [result] = await pool.query(
+    const result = await pool.query(
       `UPDATE contributions 
-         SET status = ?, notes = ?, updatedAt = CURRENT_TIMESTAMP 
-       WHERE contributionID = ?`,
+         SET status = $1, notes = $2, updatedAt = CURRENT_TIMESTAMP 
+       WHERE contributionID = $3`,
       [status, notes, contributionID]
     );
-    return result.affectedRows > 0;
+    return result.rowCount > 0;
   },
 
   // Get contribution by ID
   async getById(contributionID) {
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT 
          c.contributionID,
          c.memberID,
@@ -108,10 +108,10 @@ const Contribution = {
        FROM contributions c 
        JOIN users u ON c.userID = u.userID 
        JOIN members m ON c.memberID = m.memberID 
-       WHERE c.contributionID = ?`,
+       WHERE c.contributionID = $1`,
       [contributionID]
     );
-    return rows[0];
+    return result.rows[0];
   },
 
   // Get all contributions with filters
@@ -145,34 +145,34 @@ const Contribution = {
     const params = [];
 
     if (filters.status) {
-      query += ` AND c.status = ?`;
+      query += ` AND c.status = $${params.length + 1}`;
       params.push(filters.status);
     }
 
     if (filters.paymentMethod) {
-      query += ` AND c.paymentMethod = ?`;
+      query += ` AND c.paymentMethod = $${params.length + 1}`;
       params.push(filters.paymentMethod);
     }
 
     if (filters.startDate) {
-      query += ` AND c.contributionDate >= ?`;
+      query += ` AND c.contributionDate >= $${params.length + 1}`;
       params.push(filters.startDate);
     }
 
     if (filters.endDate) {
-      query += ` AND c.contributionDate <= ?`;
+      query += ` AND c.contributionDate <= $${params.length + 1}`;
       params.push(filters.endDate);
     }
 
     query += ` ORDER BY c.contributionDate DESC`;
 
-    const [rows] = await pool.query(query, params);
-    return rows;
+    const result = await pool.query(query, params);
+    return result.rows;
   },
 
   // Get contribution statistics for a member
   async getMemberStats(memberID) {
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT 
         COUNT(*) as totalContributions,
         SUM(CASE WHEN status = 'confirmed' THEN amount ELSE 0 END) as totalConfirmed,
@@ -180,10 +180,10 @@ const Contribution = {
         SUM(CASE WHEN status = 'rejected' THEN amount ELSE 0 END) as totalRejected,
         AVG(amount) as averageAmount
        FROM contributions 
-       WHERE memberID = ?`,
+       WHERE memberID = $1`,
       [memberID]
     );
-    return rows[0];
+    return result.rows[0];
   }
 };
 

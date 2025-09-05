@@ -54,7 +54,8 @@ const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    let [userRows] = await pool.query("SELECT * FROM users WHERE username = ?", [username]);
+    const userRowsResult = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+    const userRows = userRowsResult.rows;
     let user = null;
     let isAdmin = false;
     let memberID = null;
@@ -67,7 +68,8 @@ const login = async (req, res) => {
 
           // If member, get memberID from members table and check if active
       if (!isAdmin) {
-        const [memberRows] = await pool.query("SELECT * FROM members WHERE userID = ?", [user.userID]);
+        const memberRowsResult = await pool.query("SELECT * FROM members WHERE userID = $1", [user.userID]);
+        const memberRows = memberRowsResult.rows;
         if (memberRows.length > 0) {
         const member = memberRows[0];
         memberID = member.memberID;
@@ -86,7 +88,8 @@ const login = async (req, res) => {
       }
     } else {
       // 🔍 If not found in users, check admins table
-      const [adminRows] = await pool.query("SELECT * FROM admins WHERE username = ?", [username]);
+      const adminRowsResult = await pool.query("SELECT * FROM admins WHERE username = $1", [username]);
+      const adminRows = adminRowsResult.rows;
       if (adminRows.length > 0) {
         user = adminRows[0];
         isAdmin = true;
@@ -143,9 +146,10 @@ const login = async (req, res) => {
 export const getUsersForMessaging = async (req, res) => {
   try {
     // ⚡ FIX: your users table uses `userID` not `id`
-    const [rows] = await pool.query(
+    const rowsResult = await pool.query(
       "SELECT userID AS id, username, role FROM users WHERE role IN ('admin','treasurer','screening_committee')"
     );
+    const rows = rowsResult.rows;
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: "Error fetching users", error: err.message });
@@ -165,10 +169,11 @@ const forgotPassword = async (req, res) => {
     }
 
     // Check if user exists
-    const [userRows] = await pool.query(
-      "SELECT userID, email, firstName, lastName FROM users WHERE email = ?",
+    const userRowsResult = await pool.query(
+      "SELECT userID, email, firstName, lastName FROM users WHERE email = $1",
       [email]
     );
+    const userRows = userRowsResult.rows;
 
     if (userRows.length === 0) {
       // Don't reveal if email exists or not for security
@@ -186,7 +191,7 @@ const forgotPassword = async (req, res) => {
 
     // Store reset token in database
     await pool.query(
-      "UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE userID = ?",
+      "UPDATE users SET resetToken = $1, resetTokenExpiry = $2 WHERE userID = $3",
       [resetToken, resetTokenExpiry, user.userID]
     );
 
@@ -234,10 +239,11 @@ const resetPassword = async (req, res) => {
     }
 
     // Find user by reset token
-    const [userRows] = await pool.query(
-      "SELECT userID, email, firstName, lastName, password, resetTokenExpiry FROM users WHERE resetToken = ?",
+    const userRowsResult = await pool.query(
+      "SELECT userID, email, firstName, lastName, password, resetTokenExpiry FROM users WHERE resetToken = $1",
       [token]
     );
+    const userRows = userRowsResult.rows;
 
     if (userRows.length === 0) {
       return res.status(400).json({
@@ -271,7 +277,7 @@ const resetPassword = async (req, res) => {
 
     // Update password and clear reset token
     await pool.query(
-      "UPDATE users SET password = ?, resetToken = NULL, resetTokenExpiry = NULL, updatedAt = CURRENT_TIMESTAMP WHERE userID = ?",
+      "UPDATE users SET password = $1, resetToken = NULL, resetTokenExpiry = NULL, updatedAt = CURRENT_TIMESTAMP WHERE userID = $2",
       [hashedNewPassword, user.userID]
     );
 

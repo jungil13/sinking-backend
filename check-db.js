@@ -5,48 +5,53 @@ async function checkDatabase() {
     console.log('Checking database connection and tables...\n');
     
     // Test connection
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
     console.log('✅ Database connection successful');
     
     // Check if tables exist
-    const [tables] = await connection.query('SHOW TABLES');
+    const tablesResult = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      ORDER BY table_name;
+    `);
     console.log('\n📋 Available tables:');
-    tables.forEach(table => {
-      console.log(`- ${Object.values(table)[0]}`);
+    tablesResult.rows.forEach(table => {
+      console.log(`- ${table.table_name}`);
     });
     
     // Check if we have any data in key tables
     console.log('\n📊 Checking data in key tables:');
     
     try {
-      const [contributions] = await connection.query('SELECT COUNT(*) as count FROM contributions');
-      console.log(`Contributions: ${contributions[0].count} records`);
+      const contributionsResult = await client.query('SELECT COUNT(*) as count FROM contributions');
+      console.log(`Contributions: ${contributionsResult.rows[0].count} records`);
     } catch (e) {
       console.log('❌ Contributions table error:', e.message);
     }
     
     try {
-      const [members] = await connection.query('SELECT COUNT(*) as count FROM members');
-      console.log(`Members: ${members[0].count} records`);
+      const membersResult = await client.query('SELECT COUNT(*) as count FROM members');
+      console.log(`Members: ${membersResult.rows[0].count} records`);
     } catch (e) {
       console.log('❌ Members table error:', e.message);
     }
     
     try {
-      const [loans] = await connection.query('SELECT COUNT(*) as count FROM loans');
-      console.log(`Loans: ${loans[0].count} records`);
+      const loansResult = await client.query('SELECT COUNT(*) as count FROM loans');
+      console.log(`Loans: ${loansResult.rows[0].count} records`);
     } catch (e) {
       console.log('❌ Loans table error:', e.message);
     }
     
     try {
-      const [withdrawals] = await connection.query('SELECT COUNT(*) as count FROM withdrawals');
-      console.log(`Withdrawals: ${withdrawals[0].count} records`);
+      const withdrawalsResult = await client.query('SELECT COUNT(*) as count FROM withdrawals');
+      console.log(`Withdrawals: ${withdrawalsResult.rows[0].count} records`);
     } catch (e) {
       console.log('❌ Withdrawals table error:', e.message);
     }
     
-    connection.release();
+    client.release();
     
   } catch (error) {
     console.error('❌ Database check failed:', error.message);
